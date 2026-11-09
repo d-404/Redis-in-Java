@@ -1,71 +1,67 @@
 package components;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.lang.Thread;
 
 @Component
-@AllArgsConstructor
-@Slf4j
 public class TCPServer {
-    private static RespSerializer respSerializer;
+    private static final Logger log = LoggerFactory.getLogger(TCPServer.class);
+    private static final int PORT = 6379;
+
+    private final RespSerializer respSerializer;
+
+    public TCPServer(RespSerializer respSerializer) {
+        this.respSerializer = respSerializer;
+    }
 
     public void startServer() {
-        ServerSocket serverSocket = null;
-        Socket clientSocket = null;
-        int port = 6379;
-        try {
-            serverSocket = new ServerSocket(port);
+        try (ServerSocket serverSocket = new ServerSocket()) {
             serverSocket.setReuseAddress(true);
+            serverSocket.bind(new InetSocketAddress(PORT));
+            log.info("TCP server listening on port {}", PORT);
             int id = 0;
             while (true) {
-                clientSocket = serverSocket.accept();
+                Socket clientSocket = serverSocket.accept();
                 id++;
-                Socket finalClientSocket = clientSocket;
                 InputStream inputStream = clientSocket.getInputStream();
                 OutputStream outputStream = clientSocket.getOutputStream();
-                Client client = new Client(finalClientSocket, inputStream, outputStream, id);
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        handleClient(client);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                Client client = new Client(clientSocket, inputStream, outputStream, id);
+                Thread.ofVirtual().start(() -> handleClient(client));
             }
         } catch (IOException e) {
-            log.error("Some IO Exception Occurred : ", e);
-        } finally {
-            if (clientSocket != null) {
-                try {
-                    clientSocket.close();
-                } catch (IOException e) {
-                    log.error("Some IO exception occurred while closing connection : ", e);
-                }
-            }
+            log.error("Server socket error: ", e);
         }
     }
 
-    private static void handleClient(Client client) throws IOException {
-        while (client.getSocket().isConnected()) {
-            byte[] buffer = new byte[client.getSocket().getReceiveBufferSize()];
-            int bytesRead = client.getInputStream().read(buffer);
-            if (bytesRead > 0) {
+    private void handleClient(Client client) {
+        try (Socket socket = client.getSocket()) {
+            byte[] buffer = new byte[socket.getReceiveBufferSize()];
+            while (true) {
+                int bytesRead = client.getInputStream().read(buffer);
+                if (bytesRead == -1) {
+                    break;
+                }
                 List<String[]> result = respSerializer.deserialize(buffer);
                 for (String[] strings : result) {
                     for (String string : strings) {
-                        log.info(string, " ");
+                        log.info("{} ", string);
                     }
                 }
             }
+        } catch (IOException e) {
+            log.error("Error handling client {}: ", client.getId(), e);
+        } finally {
+            log.info("Client {} disconnected", client.getId());
         }
     }
 }
