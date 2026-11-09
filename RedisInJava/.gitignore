@@ -1,0 +1,75 @@
+# ==========================================
+# 📦 Build Artifacts & Output Directories
+# ==========================================
+target/
+build/
+out/
+bin/
+*.class
+*.jar
+*.war
+*.ear
+
+# ==========================================
+# 🛠️ Build Tools (Maven & Gradle)
+# ==========================================
+.gradle/
+/build/
+!gradle-wrapper.jar
+!maven-wrapper.jar
+
+# ==========================================
+# 💻 IDE Settings & Configurations
+# ==========================================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse / Spring Tool Suite (STS)
+.metadata/
+.classpath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+.factorypath
+.apt_generated/
+*.launch
+
+# Visual Studio Code
+.vscode/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+nbproject/management-extensions.properties
+
+# ==========================================
+# 🔒 Security & Local Environments
+# ==========================================
+.env
+.env.local
+*.tmp
+*.bak
+
+# OPTIONAL: Un-comment the next line if you store secrets in application-local.properties
+# application-local.properties
+
+# ==========================================
+# 📝 Logs & Diagnostics
+# ==========================================
+*.log
+logs/
+hs_err_pid*
+
+# ==========================================
+# 🖥️ System Clutter (Mac / Windows)
+# ==========================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
