@@ -1,0 +1,49 @@
+package components;
+
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Test;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@Slf4j
+class RespSerializerTest {
+    private final RespSerializer respSerializer = new RespSerializer();
+
+    @Test
+    public void testDeserializePing() {
+        String ping = "*1\r\n$4\r\nPING\r\n";
+        List<String[]> commands = respSerializer.deserialize(ping.getBytes(StandardCharsets.UTF_8));
+
+        for (String[] s : commands) {
+            log.info("{}", String.join(" ", s));
+        }
+        assertEquals(1, commands.size());
+        assertEquals(1, commands.get(0).length);
+        assertEquals("PING", commands.get(0)[0]);
+    }
+
+    @Test
+    public void testMultipleCommands() {
+        String multipleCommands = "*2\r\n*3\r\n$3\r\nset\r\n$3\r\nkey\r\n$5\r\nvalue\r\n*3\r\n$3\r\nset\r\n$3\r\nkey\r\n$5\r\nvalue\u0000";
+        List<String[]> commands = respSerializer.deserialize(multipleCommands.getBytes(StandardCharsets.UTF_8));
+        log.info("Parsed {} commands", commands.size());
+
+        for (String[] s : commands) {
+            log.info("{}", String.join(" ", s));
+        }
+        assertEquals(2, commands.size());
+        assertEquals(3, commands.get(0).length);
+        assertEquals(3, commands.get(1).length);
+
+        assertEquals("set", commands.get(0)[0]);
+        assertEquals("key", commands.get(0)[1]);
+        assertEquals("value", commands.get(0)[2]);
+
+        assertEquals("set", commands.get(1)[0]);
+        assertEquals("key", commands.get(1)[1]);
+        assertEquals("value", commands.get(1)[2]);
+    }
+}

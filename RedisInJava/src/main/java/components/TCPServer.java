@@ -10,8 +10,10 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.lang.Thread;
+import java.util.Locale;
 
 @Component
 public class TCPServer {
@@ -19,9 +21,11 @@ public class TCPServer {
     private static final int PORT = 6379;
 
     private final RespSerializer respSerializer;
+    private final CommandHandler commandHandler;
 
-    public TCPServer(RespSerializer respSerializer) {
+    public TCPServer(RespSerializer respSerializer, CommandHandler commandHandler) {
         this.respSerializer = respSerializer;
+        this.commandHandler = commandHandler;
     }
 
     public void startServer() {
@@ -53,9 +57,7 @@ public class TCPServer {
                 }
                 List<String[]> result = respSerializer.deserialize(buffer);
                 for (String[] strings : result) {
-                    for (String string : strings) {
-                        log.info("{} ", string);
-                    }
+                    handleCommand(strings, client);
                 }
             }
         } catch (IOException e) {
@@ -63,5 +65,16 @@ public class TCPServer {
         } finally {
             log.info("Client {} disconnected", client.getId());
         }
+    }
+
+    private void handleCommand(String[] command, Client client) throws IOException {
+        String result = switch (command[0].toUpperCase(Locale.ROOT)) {
+            case "PING" -> commandHandler.ping(command);
+            case "ECHO" -> commandHandler.echo(command);
+            case "SET" -> commandHandler.set(command);
+            default -> "";
+        };
+        if (!result.isEmpty())
+            client.getOutputStream().write(result.getBytes(StandardCharsets.UTF_8));
     }
 }

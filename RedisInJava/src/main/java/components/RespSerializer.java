@@ -17,14 +17,18 @@ public class RespSerializer {
         while (i < dataArray.length) {
             char currentChar = dataArray[i];
             if (currentChar == '*') {
+                i++;
                 StringBuilder arrLength = new StringBuilder();
-                while (i < dataArray.length && Character.isDigit(dataArray[i]))
+                while (i < dataArray.length && Character.isDigit(dataArray[i])) {
                     arrLength.append(dataArray[i++]);
+                }
                 i += 2;
-                if (dataArray[i] == '*') {
-                    for (int j = 0; j < Integer.parseInt(arrLength.toString()); j++) {
-                        StringBuilder nestedLength = new StringBuilder();
+
+                if (i < dataArray.length && dataArray[i] == '*') {
+                    int outerCount = Integer.parseInt(arrLength.toString());
+                    for (int j = 0; j < outerCount && i < dataArray.length; j++) {
                         i++;
+                        StringBuilder nestedLength = new StringBuilder();
                         while (i < dataArray.length && Character.isDigit(dataArray[i])) {
                             nestedLength.append(dataArray[i++]);
                         }
@@ -38,6 +42,8 @@ public class RespSerializer {
                     i = getParts(dataArray, i, subArray);
                     resultList.add(subArray);
                 }
+            } else {
+                i++;
             }
         }
         return resultList;
@@ -51,15 +57,17 @@ public class RespSerializer {
                 StringBuilder partLength = new StringBuilder();
                 while (i < dataArray.length && Character.isDigit(dataArray[i])) {
                     partLength.append(dataArray[i++]);
-                    i++;
                 }
                 i += 2;
                 StringBuilder subParts = new StringBuilder();
-                for (int k = 0; k < Integer.parseInt(partLength.toString()); k++)
+                int length = Integer.parseInt(partLength.toString());
+                for (int k = 0; k < length && i < dataArray.length; k++) {
                     subParts.append(dataArray[i++]);
+                }
                 i += 2;
                 subArray[j++] = subParts.toString();
-            }
+            } else
+                i++;
         }
         return i;
     }
